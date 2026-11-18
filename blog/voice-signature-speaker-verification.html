@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Signature: On-Device Speaker Verification &amp; Speaker Recognition</title>
+<meta name="description" content="Voice Signature is an on-device speaker verification (voice biometrics) model I built end to end: 23K speakers, TDNN, INT8 QAT and 1.07% EER.">
+<link rel="stylesheet" href="../css/style.css?v=26">
+<meta name="author" content="Ravindra Singh">
+<link rel="canonical" href="https://ravindra1998.github.io/blog/voice-signature-speaker-verification.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Voice Signature: On-Device Speaker Verification That Runs Fully in INT8">
+<meta property="og:description" content="Voice Signature is an on-device speaker verification (voice biometrics) model I built end to end: 23K speakers, TDNN, INT8 QAT and 1.07% EER.">
+<meta property="og:url" content="https://ravindra1998.github.io/blog/voice-signature-speaker-verification.html">
+<meta property="og:image" content="https://ravindra1998.github.io/images/voice-signature-og.jpg">
+<meta property="og:site_name" content="Ravindra Singh">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@RaviFoujda">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Voice Signature: On-Device Speaker Verification That Runs Fully in INT8",
+  "description": "Voice Signature is an on-device speaker verification (voice biometrics) model I built end to end: 23K speakers, TDNN, INT8 QAT and 1.07% EER.",
+  "image": "https://ravindra1998.github.io/images/voice-signature-og.jpg",
+  "keywords": "speaker verification, speaker recognition, speaker identification, voice signature, voiceprint, voice biometrics, voice authentication, speaker embedding, TDNN, AAM-softmax, equal error rate, INT8 quantization, quantization-aware training, edge AI, TinyML, on-device AI",
+  "about": [{"@type": "Thing", "name": "Speaker recognition"}, {"@type": "Thing", "name": "Speaker verification"}, {"@type": "Thing", "name": "Voice biometrics"}, {"@type": "Thing", "name": "Edge AI"}],
+  "inLanguage": "en",
+  "datePublished": "2026-10-27",
+  "author": { "@type": "Person", "name": "Ravindra Singh", "url": "https://ravindra1998.github.io/" },
+  "mainEntityOfPage": "https://ravindra1998.github.io/blog/voice-signature-speaker-verification.html"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is speaker verification?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Speaker verification checks whether a voice belongs to the person it claims to be. The system compares a new recording with that person's enrolled voice signature and accepts it only if the similarity score clears a threshold. It is a 1 : 1 comparison, unlike speaker identification, which compares a voice against many people."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the difference between speaker verification and speaker identification?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Speaker verification answers “is this the claimed person?” with a 1 : 1 comparison and an accept or reject decision. Speaker identification answers “who is speaking?” by comparing the voice with every enrolled person (1 : N) and returning the best match. Both are types of speaker recognition and can use the same speaker embedding model."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is a voice signature or voiceprint?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A voice signature, or voiceprint, is a compact numeric description of how a person sounds. In this project it is 128 numbers: the normalized average of the speaker embeddings from the user's enrollment speech. It describes the voice, not the words, so the user can say anything."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does EER mean in speaker verification?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "EER, the equal error rate, is the error rate at the threshold where false accepts (impostors let in) equal false rejects (genuine users turned away). Lower is better. Voice Signature reaches 1.07% EER on 950 speakers it never saw during training, so roughly 1 trial in 100 is wrong at that operating point."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can speaker verification run on an edge device?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Voice Signature runs fully in INT8 on a low-power edge AI processor: 272,808 parameters in a 327 KB model file. Quantization-aware training kept the accuracy close to the float model, and audio never has to leave the device."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is Voice Signature text-dependent or text-independent?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It is text-independent. The user does not have to repeat a fixed passphrase; any speech works for both enrollment and verification."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How much speech does a user need to enroll and verify?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Enrollment takes about 15 to 20 seconds of speech. Each later verification needs a 3 to 4 second attempt, whose 2-second windows are scored against the stored voice signature and averaged."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<header>
+  <div class="wrap"><nav>
+    <div class="brand">Ravindra<span>&nbsp;Singh</span></div>
+    <div class="navlinks" id="nav">
+      <a href="../index.html#home">Home</a>
+      <a href="../index.html#about">About</a>
+      <a href="../index.html#projects">Project</a>
+      <a href="../index.html#certificates">Certificates</a>
+      <a href="https://github.com/ravindra1998" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.linkedin.com/in/ravindra-singh-72136719b/" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="../assets/resume.pdf" download>Resume</a>
+      <a href="../index.html#blog">Blog</a>
+      <a href="../index.html#contact">Contact</a>
+    </div>
+    <button class="menu-btn" onclick="document.getElementById('nav').classList.toggle('open')">☰</button>
+  </nav></div>
+</header>
+
+<article class="article">
+  <div class="article-wrap">
+    <a class="back-link" href="../index.html#blog">← Back to all posts</a>
+    <p class="article-meta">Speech · Edge AI · Biometrics</p>
+    <h1>Voice Signature: On-Device Speaker Verification That Runs Fully in INT8</h1>
+
+    <figure class="article-hero fit">
+      <img src="../images/voice-signature-hero.svg" alt="Speaker verification: a speech waveform converted into a 128-value voice signature (speaker embedding)" width="1200" height="480">
+    </figure>
+
+    <p class="article-intro">Voice Signature is a text-independent <strong>speaker verification</strong> (voice biometrics) system I built end to end, from collecting and cleaning the data to the final model running on a low-power edge AI processor. A user enrolls once by speaking for about 15 seconds; after that, a 3–4 second attempt is enough to confirm it is really them. The deployed model is <strong>fully INT8</strong>, about <strong>273K parameters</strong> in a <strong>327 KB</strong> file, and reaches <strong>1.07% EER</strong> on 950 speakers it never saw during training.</p>
+
+    <div class="article-stats">
+      <div class="stat lead"><b>1.07%</b><span>EER, fully INT8, on 950 unseen speakers</span></div>
+      <div class="stat"><b>23,265</b><span>speakers in the training set (5.77M windows)</span></div>
+      <div class="stat"><b>128</b><span>values in each voice signature</span></div>
+      <div class="stat"><b>327 KB</b><span>model file, 272,808 parameters</span></div>
+    </div>
+
+    <h2>What Is a Voice Signature?</h2>
+    <p>Speaker verification answers one question: <em>is this the person they claim to be?</em> The model turns every 2-second window of speech into a list of 128 numbers, a <strong>speaker embedding</strong> (also called a voiceprint), that describes how a person sounds rather than what they say. Windows from the same person land close together; windows from different people land far apart.</p>
+    <p>At enrollment, the average of several embeddings becomes the user's stored <strong>voice signature</strong>. At verification, a new attempt is compared with that signature using cosine similarity, and the device accepts it if the score clears a threshold. Because it is text-independent, the user can say anything; there is no fixed passphrase to overhear.</p>
+
+    <figure class="article-figure">
+      <div class="fig-title">One model is trained offline, then enrolls and verifies users on the device</div>
+      <div class="fig-sub">The same feature pipeline runs in both places, so the device sees exactly what the model was trained on.</div>
+      <div class="pipeline-row">
+        <div class="pipeline-label">Build · offline on a laptop GPU</div>
+        <ol class="pipeline">
+          <li><b>Speech data</b><span>23,265 speakers</span></li>
+          <li><b>Clean + audit</b><span>duplicates, mixed, thin</span></li>
+          <li><b>Features</b><span>8 kHz, 40 log-mels, 2 s windows</span></li>
+          <li><b>Train</b><span>TDNN-lite + AAM-softmax</span></li>
+          <li class="key"><b>QAT + INT8</b><span>327 KB TFLite</span></li>
+        </ol>
+      </div>
+      <div class="pipeline-row">
+        <div class="pipeline-label">Run · on the device</div>
+        <ol class="pipeline">
+          <li><b>Microphone</b><span>8 kHz audio</span></li>
+          <li><b>Same features</b><span>VAD + log-mel</span></li>
+          <li class="key"><b>INT8 model</b><span>128-value embedding</span></li>
+          <li><b>Compare</b><span>cosine vs. stored signature</span></li>
+          <li><b>Decide</b><span>accept if score ≥ threshold</span></li>
+        </ol>
+      </div>
+    </figure>
+
+    <h2>Speaker Verification vs. Speaker Identification</h2>
+    <p>Both are forms of <strong>speaker recognition</strong>, recognizing a person from their voice, but they answer different questions. Voice Signature is built for verification. Because it produces a general-purpose speaker embedding, the same voice signatures can also be used for identification by scoring an attempt against every enrolled signature and picking the best match above the threshold.</p>
+    <table class="article-table">
+      <thead><tr><th></th><th>Speaker verification</th><th>Speaker identification</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Question</strong></td><td>Is this person who they claim to be?</td><td>Which enrolled person is speaking?</td></tr>
+        <tr><td><strong>Comparison</strong></td><td>1 : 1, against one stored voice signature</td><td>1 : N, against every stored signature</td></tr>
+        <tr><td><strong>Output</strong></td><td>Accept or reject</td><td>The best-matching person, or "unknown"</td></tr>
+        <tr><td><strong>Typical use</strong></td><td>Voice login, unlocking a device</td><td>Personalizing a shared device</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Data: 23,265 Speakers, Cleaned Before Training</h2>
+    <p>The training set combines public speech corpora (in-the-wild video speech from VoxCeleb2 and VoxBlink2, read speech from LibriSpeech and Mozilla Common Voice, and Indian-language sets such as NISP, Kannada and Tamil) with a small set of recordings from the target hardware. That mix covers many accents, microphones and rooms, which is what a voice model needs to generalize.</p>
+    <p>Large public corpora are messy, so I audited them before training. Mistakes in speaker labels teach the model the wrong thing, and they also make evaluation look better or worse than it really is:</p>
+    <ul>
+      <li><strong>Duplicate identities:</strong> the same person under two IDs, within or across corpora, found by voice-embedding similarity and quarantined.</li>
+      <li><strong>Mixed speakers:</strong> files that contain more than one voice.</li>
+      <li><strong>Thin speakers:</strong> too little speech; every speaker needs at least 3 files and 8 windows.</li>
+      <li><strong>Outlier files:</strong> a file whose voice is far from the rest of that speaker's files is dropped.</li>
+      <li><strong>Leakage checks:</strong> no speaker appears in more than one of the train, test and holdout sets, and test windows never come from a recording used for enrollment.</li>
+    </ul>
+
+    <h2>Features and Augmentation</h2>
+    <p>Every recording goes through the same steps, offline and on the device:</p>
+    <ol>
+      <li>Resample to <strong>8 kHz</strong> mono.</li>
+      <li>Remove silence with <strong>Silero VAD</strong>, joining short gaps and dropping tiny fragments.</li>
+      <li>Normalize the level to −21 dBFS, and reject recordings that are too quiet.</li>
+      <li>Cut <strong>2-second windows</strong> every second.</li>
+      <li>Compute <strong>40 log-mel bands</strong>, giving a 126 × 40 feature window.</li>
+    </ol>
+    <p>To make the model robust, each clean window is stored with two augmented copies: office noise, music, babble and stationary noise at realistic signal-to-noise ratios, real room reverberation, and channel effects such as gain changes, telephone band-limiting and light clipping. SpecAugment masks a few frames and mel bands on top during training. Every accuracy number below, though, is measured on <strong>clean windows only</strong>, because that is what the deployed model sees.</p>
+
+    <h2>Designing a Model the Chip Can Actually Run</h2>
+    <p>The usual speaker-verification models, such as ECAPA-TDNN and ResNets, depend on residual connections, attention and statistics pooling. The target chip runs a fixed set of INT8 operators with a tight per-layer memory budget, so none of those were available. Every design had to be built only from convolutions, depthwise convolutions, fixed average pooling, reshapes and a final dense layer, all in INT8.</p>
+    <p>The final architecture is a <strong>TDNN-lite</strong> network: a small 2-D convolutional front end over time and frequency, followed by a depthwise time-delay body that treats the 40 mel bands as channels and convolves over time only. I compared five candidate designs on identical trials; this one gave the best accuracy among the models that fit in the device's memory.</p>
+    <div class="callout"><p><strong>Lesson:</strong> passing the memory rule on paper wasn't enough. One design fit the per-layer heap check but still hung on the device, because the real working set is the layer's input, output and im2col buffer together. Measuring that working set explained the failure and led to the final, slimmer front end.</p></div>
+
+    <h2>Training: AAM-Softmax Over 23,265 Speakers</h2>
+    <p>The network is trained as a 23,265-way speaker classifier with an <strong>AAM-softmax</strong> (additive angular margin) loss, which pushes each speaker's embeddings into a tight cluster with a clear margin from everyone else. After training, the classifier head is removed and the 128-value embedding layer becomes the voice signature. The best epoch is chosen by verification EER on 500 development speakers, kept separate from the 950 test speakers used for the headline number.</p>
+    <p>Two details made a big difference. First, ramping the angular margin up over the first epochs: with the full margin from the start, the small network stalled at near-zero accuracy. Second, the learning-rate schedule: each learning-rate cut produced an immediate drop in EER, and a cosine schedule avoided hours spent on plateaus.</p>
+
+    <h2>INT8: Why Quantization-Aware Training Was Essential</h2>
+    <p>Converting a trained float model to INT8 after training, the usual quick route, lost up to 4 points of EER on these depthwise models. No single layer was broken: every layer added a little rounding noise, and it accumulated over a dozen convolutions until the embedding no longer matched the float one. Calibrating on more data didn't fix it.</p>
+    <p><strong>Quantization-aware training (QAT)</strong> did. The model is fine-tuned with simulated INT8 rounding in the loop, so it learns weights that survive quantization, and only then exported to a fully INT8 TFLite file: INT8 input, weights, activations and output, with no float operations at the edges.</p>
+
+    <figure class="article-figure chart" id="qat-chart">
+      <div class="fig-title">QAT recovers almost all of the accuracy lost to INT8</div>
+      <div class="fig-sub">EER on 399 unseen holdout speakers, strict recording-disjoint protocol; lower is better</div>
+      <div class="chart-legend" aria-hidden="true">
+        <span><i style="background:var(--s1)"></i>Float model</span>
+        <span><i style="background:var(--s2)"></i>Plain INT8 conversion</span>
+        <span><i style="background:var(--s3)"></i>INT8 after QAT</span>
+      </div>
+      <div class="chart-group">
+        <div class="chart-group-name">Earlier on-device model (TDNN, no 2-D front end)</div>
+        <div class="chart-row"><span class="lbl">Float</span><div class="chart-track"><div class="chart-bar" tabindex="0" style="width:32%;background:var(--s1)" data-tip="Earlier model · Float: 2.24% EER"><span class="val">2.24%</span></div></div></div>
+        <div class="chart-row"><span class="lbl">Plain INT8</span><div class="chart-track"><div class="chart-bar" tabindex="0" style="width:91.43%;background:var(--s2)" data-tip="Earlier model · Plain INT8: 6.40% EER (+4.16 points)"><span class="val">6.40%</span></div></div></div>
+        <div class="chart-row"><span class="lbl">QAT INT8</span><div class="chart-track"><div class="chart-bar" tabindex="0" style="width:35.29%;background:var(--s3)" data-tip="Earlier model · QAT INT8: 2.47% EER (+0.23 points)"><span class="val">2.47%</span></div></div></div>
+      </div>
+      <div class="chart-group">
+        <div class="chart-group-name">Final model (TDNN-lite with 2-D front end)</div>
+        <div class="chart-row"><span class="lbl">Float</span><div class="chart-track"><div class="chart-bar" tabindex="0" style="width:28.43%;background:var(--s1)" data-tip="Final model · Float: 1.99% EER"><span class="val">1.99%</span></div></div></div>
+        <div class="chart-row"><span class="lbl">Plain INT8</span><div class="chart-track"><div class="chart-bar" tabindex="0" style="width:33.71%;background:var(--s2)" data-tip="Final model · Plain INT8: 2.36% EER (+0.37 points)"><span class="val">2.36%</span></div></div></div>
+        <div class="chart-row"><span class="lbl">QAT INT8</span><div class="chart-track"><div class="chart-bar" tabindex="0" style="width:32.71%;background:var(--s3)" data-tip="Final model · QAT INT8: 2.29% EER (+0.30 points)"><span class="val">2.29%</span></div></div></div>
+      </div>
+      <div class="chart-axis" aria-hidden="true"><span></span><div class="ticks"><span>0%</span><span>1%</span><span>2%</span><span>3%</span><span>4%</span><span>5%</span><span>6%</span><span>7%</span></div></div>
+      <details>
+        <summary>Show the data as a table</summary>
+        <table class="article-table">
+          <thead><tr><th>Model</th><th class="num">Float</th><th class="num">Plain INT8</th><th class="num">QAT INT8</th></tr></thead>
+          <tbody>
+            <tr><td>Earlier on-device model</td><td class="num">2.24%</td><td class="num">6.40%</td><td class="num">2.47%</td></tr>
+            <tr><td>Final model</td><td class="num">1.99%</td><td class="num">2.36%</td><td class="num best">2.29%</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <figcaption>The 2-D front end also makes the model far easier to quantize: plain INT8 costs the final model 0.37 points, against 4.16 for the earlier design. Holdout EERs are higher than the headline 1.07% because this protocol always tests on a different recording session from enrollment.</figcaption>
+    </figure>
+
+    <h2>Results</h2>
+    <p>Every model was scored on speakers it never trained on, using clean windows only, and models were compared on identical trials: 17,774 genuine and 16.9 million impostor trials across 950 test speakers. The final INT8 model beats the model it replaces on every metric, and its lead in EER is statistically real (better in 100% of bootstrap resamples).</p>
+    <table class="article-table">
+      <thead><tr><th>Metric (950 unseen test speakers)</th><th class="num">Final model</th><th class="num">Previous model</th></tr></thead>
+      <tbody>
+        <tr><td>EER, after enrollment</td><td class="num best">1.07%</td><td class="num">1.30%</td></tr>
+        <tr><td>EER, single 2 s window</td><td class="num best">2.42%</td><td class="num">2.92%</td></tr>
+        <tr><td>minDCF (P<sub>target</sub> = 0.01)</td><td class="num best">0.136</td><td class="num">0.172</td></tr>
+        <tr><td>False rejects when 1 in 100 impostors gets in</td><td class="num best">1.13%</td><td class="num">1.61%</td></tr>
+        <tr><td>False rejects when 1 in 1,000 impostors gets in</td><td class="num best">5.81%</td><td class="num">8.28%</td></tr>
+        <tr><td>Model size</td><td class="num">327 KB</td><td class="num">302 KB</td></tr>
+      </tbody>
+    </table>
+    <p><em>(EER is the error rate at the point where false accepts equal false rejects. Both models are fully INT8 and scored exactly as the device runs them.)</em></p>
+
+    <h2>How It Works on the Device</h2>
+    <ul>
+      <li><strong>Enrollment:</strong> the user speaks for 15–20 seconds. An enrollment gate compares each take with the others and drops takes that don't match, so a stranger's voice can't slip into someone's signature.</li>
+      <li><strong>Verification:</strong> a 3–4 second attempt gives 2–3 windows; their scores against the stored signature are averaged. A single window performs at the window EER, and averaging moves it toward the enrollment EER.</li>
+      <li><strong>Privacy:</strong> everything runs on the chip. Audio never leaves the device, and only the 128-value signature is stored.</li>
+    </ul>
+
+    <h2>Key Learnings</h2>
+    <ul>
+      <li>Data cleaning moved results as much as architecture changes did. Duplicate and mixed identities quietly corrupt both training and evaluation.</li>
+      <li>Hardware constraints should shape the model from day one: design within the operator set and the real working memory, not just the parameter count.</li>
+      <li>On small depthwise networks, quantization-aware training isn't optional. Plain conversion can cost more accuracy than any architecture choice.</li>
+      <li>Honest evaluation needs unseen speakers, recording-disjoint tests, identical trials and confidence intervals. Otherwise a "better" model may only be noise.</li>
+      <li>The features on the device must match training exactly; any mismatch costs more than switching models.</li>
+    </ul>
+
+    <h2>What's Next</h2>
+    <p>The next steps are calibrating the decision threshold on recordings from more people on the device, since a shared microphone and room raise similarity scores between different people, adding more device-recorded speakers to training, and adding replay protection: the model tells voices apart, but on its own it does not detect a recording of the enrolled user.</p>
+
+    <h2>Frequently Asked Questions</h2>
+    <h3 class="article-sub">What is speaker verification?</h3>
+    <p>Speaker verification checks whether a voice belongs to the person it claims to be. The system compares a new recording with that person's enrolled voice signature and accepts it only if the similarity score clears a threshold. It is a 1 : 1 comparison, unlike speaker identification, which compares a voice against many people.</p>
+    <h3 class="article-sub">What is the difference between speaker verification and speaker identification?</h3>
+    <p>Speaker verification answers “is this the claimed person?” with a 1 : 1 comparison and an accept or reject decision. Speaker identification answers “who is speaking?” by comparing the voice with every enrolled person (1 : N) and returning the best match. Both are types of speaker recognition and can use the same speaker embedding model.</p>
+    <h3 class="article-sub">What is a voice signature or voiceprint?</h3>
+    <p>A voice signature, or voiceprint, is a compact numeric description of how a person sounds. In this project it is 128 numbers: the normalized average of the speaker embeddings from the user's enrollment speech. It describes the voice, not the words, so the user can say anything.</p>
+    <h3 class="article-sub">What does EER mean in speaker verification?</h3>
+    <p>EER, the equal error rate, is the error rate at the threshold where false accepts (impostors let in) equal false rejects (genuine users turned away). Lower is better. Voice Signature reaches 1.07% EER on 950 speakers it never saw during training, so roughly 1 trial in 100 is wrong at that operating point.</p>
+    <h3 class="article-sub">Can speaker verification run on an edge device?</h3>
+    <p>Yes. Voice Signature runs fully in INT8 on a low-power edge AI processor: 272,808 parameters in a 327 KB model file. Quantization-aware training kept the accuracy close to the float model, and audio never has to leave the device.</p>
+    <h3 class="article-sub">Is Voice Signature text-dependent or text-independent?</h3>
+    <p>It is text-independent. The user does not have to repeat a fixed passphrase; any speech works for both enrollment and verification.</p>
+    <h3 class="article-sub">How much speech does a user need to enroll and verify?</h3>
+    <p>Enrollment takes about 15 to 20 seconds of speech. Each later verification needs a 3 to 4 second attempt, whose 2-second windows are scored against the stored voice signature and averaged.</p>
+
+    <a class="back-link" href="../index.html#blog">← Back to all posts</a>
+  </div>
+</article>
+<div class="chart-tip" id="chart-tip" role="tooltip"></div>
+<script>
+  (function(){
+    var tip = document.getElementById('chart-tip');
+    function move(x, y){
+      var w = tip.offsetWidth, h = tip.offsetHeight;
+      tip.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, x + 12)) + 'px';
+      tip.style.top = Math.max(8, y - h - 10) + 'px';
+    }
+    function show(el, x, y){ tip.textContent = el.getAttribute('data-tip'); tip.classList.add('on'); move(x, y); }
+    function hide(){ tip.classList.remove('on'); }
+    document.querySelectorAll('.chart-bar[data-tip]').forEach(function(b){
+      b.setAttribute('aria-label', b.getAttribute('data-tip'));
+      b.addEventListener('mouseenter', function(e){ show(b, e.clientX, e.clientY); });
+      b.addEventListener('mousemove', function(e){ move(e.clientX, e.clientY); });
+      b.addEventListener('mouseleave', hide);
+      b.addEventListener('focus', function(){ var r = b.getBoundingClientRect(); show(b, r.left + r.width / 2, r.top); });
+      b.addEventListener('blur', hide);
+    });
+  })();
+</script>
+
+<footer>
+  <div class="wrap footer-inner">
+    <div class="socials">
+      <a href="https://x.com/RaviFoujda"  target="_blank" rel="noopener" aria-label="Twitter">
+        <svg viewBox="0 0 24 24"><path d="M23 4.9c-.8.4-1.7.6-2.6.8a4.5 4.5 0 0 0 2-2.5c-.9.5-1.9.9-2.9 1.1a4.5 4.5 0 0 0-7.7 4.1A12.8 12.8 0 0 1 1.6 3.6a4.5 4.5 0 0 0 1.4 6 4.4 4.4 0 0 1-2-.6v.1a4.5 4.5 0 0 0 3.6 4.4 4.5 4.5 0 0 1-2 .1 4.5 4.5 0 0 0 4.2 3.1A9 9 0 0 1 1 18.6a12.7 12.7 0 0 0 6.9 2c8.3 0 12.8-6.9 12.8-12.8v-.6c.9-.6 1.6-1.4 2.3-2.3z"/></svg>
+      </a>
+      <a href="https://www.facebook.com/ravindrasingh.faujdar.5/" target="_blank" rel="noopener" aria-label="Facebook">
+        <svg viewBox="0 0 24 24"><path d="M15 8h-2c-.6 0-1 .4-1 1v2h3l-.5 3H12v7H9v-7H7v-3h2V8.5C9 6 10.5 4.5 13 4.5c1 0 2 .1 2 .1V7h-1c-.7 0-1 .3-1 1z"/></svg>
+      </a>
+      <a href="https://www.youtube.com/@RavindraFoujdar" target="_blank" rel="noopener" aria-label="YouTube">
+        <svg viewBox="0 0 24 24"><path d="M22 7.5c-.2-1-.9-1.7-1.9-2C18.3 5 12 5 12 5s-6.3 0-8.1.5c-1 .3-1.7 1-1.9 2C1.5 9.3 1.5 12 1.5 12s0 2.7.5 4.5c.2 1 .9 1.7 1.9 2C5.7 19 12 19 12 19s6.3 0 8.1-.5c1-.3 1.7-1 1.9-2 .5-1.8.5-4.5.5-4.5s0-2.7-.5-4.5zM10 15V9l5 3-5 3z"/></svg>
+      </a>
+      <a href="https://www.linkedin.com/in/ravindra-singh-72136719b/" target="_blank" rel="noopener" aria-label="LinkedIn">
+        <svg viewBox="0 0 24 24"><path d="M6.9 8H4V20h2.9V8zM5.4 3.5A1.7 1.7 0 1 0 5.4 7a1.7 1.7 0 0 0 0-3.5zM20 20h-2.9v-5.8c0-1.4 0-3.2-2-3.2s-2.3 1.5-2.3 3.1V20H10V8h2.8v1.6h.1c.4-.7 1.3-1.6 2.9-1.6 3.1 0 3.7 2 3.7 4.7V20z"/></svg>
+      </a>
+      <a href="https://github.com/ravindra1998" target="_blank" rel="noopener" aria-label="GitHub">
+        <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.7.3-1.1.6-1.4-2.2-.300-4.6-1.1-4.6-4.9 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.8-2.4 4.6-4.6 4.9.3.3.6.9.6 1.8v2.7c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg>
+      </a>
+    </div>
+    <p class="copyright">Copyright <span id="year">2026</span>. All rights reserved!</p>
+  </div>
+</footer>
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+  document.querySelectorAll('#nav a').forEach(function(a){
+    a.addEventListener('click', function(){ document.getElementById('nav').classList.remove('open'); });
+  });
+</script>
+</body>
+</html>
