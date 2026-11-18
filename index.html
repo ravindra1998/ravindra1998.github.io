@@ -36,7 +36,7 @@
   "image": "https://ravindra1998.github.io/images/og-image.jpg",
   "email": "mailto:ravindradeeg95@gmail.com",
   "worksFor": { "@type": "Organization", "name": "Ambient Scientific" },
-  "knowsAbout": ["Machine Learning", "Deep Learning", "Edge AI", "Embedded AI", "Computer Vision", "Speech Processing", "Natural Language Processing", "Small Language Models", "Python", "TensorFlow", "PyTorch"],
+  "knowsAbout": ["Speaker Verification", "Speaker Recognition", "Machine Learning", "Deep Learning", "Edge AI", "Embedded AI", "Computer Vision", "Speech Processing", "Natural Language Processing", "Small Language Models", "Python", "TensorFlow", "PyTorch"],
   "sameAs": [
     "https://www.linkedin.com/in/ravindra-singh-72136719b/",
     "https://github.com/ravindra1998",
@@ -194,7 +194,7 @@
       </div>
       <p>Developed a Face ID Recognition System using image data collected through an ESP32 camera module for embedded biometric authentication. The project involved collecting and labeling facial image datasets, followed by preprocessing and augmentation to improve robustness under varying lighting and pose conditions.</p>
       <p>A lightweight Convolutional Neural Network (CNN) was designed and trained for face identification while maintaining a small memory footprint suitable for edge deployment. The final model contained roughly 5,000 parameters, enabling efficient execution on resource-constrained hardware.</p>
-      <p>The trained model was optimized and deployed on the GPX10 AI processor, providing real-time face recognition with high accuracy and low inference latency. The system achieved an overall classification accuracy of <strong>99%</strong>, demonstrating reliable performance for embedded authentication and access-control applications.</p>
+      <p>The trained model was optimized and deployed on an edge AI processor, providing real-time face recognition with high accuracy and low inference latency. The system achieved an overall classification accuracy of <strong>99%</strong>, demonstrating reliable performance for embedded authentication and access-control applications.</p>
 
       <div class="highlights">
         <h4>Key Highlights</h4>
@@ -202,7 +202,7 @@
           <li>Collected facial image data using an ESP32 camera module.</li>
           <li>Performed image preprocessing and dataset preparation.</li>
           <li>Designed a lightweight CNN architecture with ~5K parameters.</li>
-          <li>Optimized the model for embedded deployment on GPX10.</li>
+          <li>Optimized the model for embedded deployment on edge AI hardware.</li>
           <li>Implemented real-time face identification and recognition.</li>
           <li>Achieved 99% recognition accuracy.</li>
           <li>Suitable for biometric authentication and smart access-control systems.</li>
@@ -220,15 +220,29 @@
   <h3 class="more-title">More Projects</h3>
   <div class="grid">
     <div class="card">
+      <h3>Bird Sound Detection (Edge AI)</h3>
+      <div class="pills"><span class="pill">Audio Classification</span><span class="pill">PCEN</span><span class="pill">INT8 QAT</span></div>
+      <p>Built a real-time bird / not-bird sound detector end to end, from collecting and cleaning 23 species of audio to a 147K-parameter INT8 CNN on an edge AI processor, with hard-negative mining against frogs, insects, cats and rain.</p>
+      <div class="result">↳ 486/486 played bird calls caught on the device, 98.8% accuracy, 159 KB model</div>
+      <p style="margin-top:12px"><a href="blog/bird-sound-detection-edge-ai.html">Read the write-up →</a></p>
+    </div>
+    <div class="card">
+      <h3>Voice Signature (Speaker Verification)</h3>
+      <div class="pills"><span class="pill">Speaker Recognition</span><span class="pill">TDNN</span><span class="pill">INT8 QAT</span></div>
+      <p>Built an on-device speaker verification (voice biometrics) system end to end, from cleaning 23K+ speakers of data to a fully INT8 speaker-embedding model on an edge AI processor.</p>
+      <div class="result">↳ 1.07% EER on 950 unseen speakers, 327 KB model</div>
+      <p style="margin-top:12px"><a href="blog/voice-signature-speaker-verification.html">Read the write-up →</a></p>
+    </div>
+    <div class="card">
       <h3>Command Word Detection</h3>
       <div class="pills"><span class="pill">CNN</span><span class="pill">keras</span><span class="pill">tensorflow</span></div>
-      <p>Developed a GPX10 command word detection system using MFCC-based audio features, trained a lightweight deep learning model for voice command recognition, deployed real-time inference on hardware.</p>
+      <p>Developed an on-device command word detection system using MFCC-based audio features, trained a lightweight deep learning model for voice command recognition, deployed real-time inference on hardware.</p>
       <div class="result">↳ Achieved 97% command recognition accuracy with real-time on-device inference.</div>
     </div>
     <div class="card">
       <h3>Small Language Model</h3>
       <div class="pills"><span class="pill">Transformer</span><span class="pill">Tokenization</span><span class="pill">NLP</span></div>
-      <p>Designed and deployed a decoder-based healthcare chatbot on GPX10 using a compact SLM (&lt;100K parameters), enabling efficient edge-AI conversational assistance with 89% accuracy and low-resource operation.</p>
+      <p>Designed and deployed a decoder-based healthcare chatbot on an edge AI processor using a compact SLM (&lt;100K parameters), enabling efficient edge-AI conversational assistance with 89% accuracy and low-resource operation.</p>
       <div class="result">↳ Achieved 89% accuracy</div>
       <p style="margin-top:12px"><a href="blog/small-language-models.html">Read the write-up →</a></p>
     </div>
@@ -260,7 +274,8 @@
       <ul>
         <li>Developed and deployed a CNN2D-based fall detection system using IMU and LSM sensor data, achieving 93% accuracy with real-time on-device inference.</li>
         <li>Built wake word and command word detection systems using I²C and ADC microphones, MFCC feature extraction, and GRU-based neural networks, achieving up to 97% accuracy.</li>
-        <li>Designed and optimized a decoder-only Small Language Model (SLM) healthcare chatbot (&lt;100K parameters) for GPX10 deployment, achieving 89% accuracy with embedded inference.</li>
+        <li>Built a real-time bird sound detector (23 species) with PCEN audio features and a 147K-parameter INT8 CNN trained with hard-negative mining and quantization-aware training, catching 100% of bird calls played to the device at 98.8% accuracy.</li>
+        <li>Designed and optimized a decoder-only Small Language Model (SLM) healthcare chatbot (&lt;100K parameters) for edge deployment, achieving 89% accuracy with embedded inference.</li>
         <li>Developed a machine learning-based Melbourne house price prediction system using regression techniques, including data preprocessing, feature engineering, and model evaluation.</li>
       </ul>
     </div>
@@ -280,6 +295,18 @@
   <h2>Tech Blog</h2>
   <p class="lead">Insights on engineering, career growth, and data science.</p>
   <div class="grid">
+    <div class="card">
+      <div class="when" style="font-size:.85rem">November 2026</div>
+      <h3 style="margin-top:6px">Bird Sound Detection on an Edge AI Chip</h3>
+      <p>A 159 KB INT8 bird call detector at 8 kHz: PCEN features, hard-negative mining and QAT, catching every played call on the device.</p>
+      <p style="margin-top:12px"><a href="blog/bird-sound-detection-edge-ai.html">Read →</a></p>
+    </div>
+    <div class="card">
+      <div class="when" style="font-size:.85rem">October 2026</div>
+      <h3 style="margin-top:6px">Voice Signature: On-Device Speaker Verification in INT8</h3>
+      <p>End-to-end speaker verification, from 23K-speaker data cleaning to a fully INT8 model on an edge AI chip, at 1.07% EER.</p>
+      <p style="margin-top:12px"><a href="blog/voice-signature-speaker-verification.html">Read →</a></p>
+    </div>
     <div class="card">
       <div class="when" style="font-size:.85rem">June 2026</div>
       <h3 style="margin-top:6px">Face Recognition on Edge Devices Using ESP32 and CNN</h3>
