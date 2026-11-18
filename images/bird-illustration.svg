@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" width="1200" height="520" role="img" aria-labelledby="bt">
+  <title id="bt">A songbird singing on a branch, with its call drawn as sound waves</title>
+  <rect width="1200" height="520" fill="#f1f7ee"/>
+  <circle cx="1080" cy="80" r="190" fill="#fbefe3"/>
+  <!-- branch -->
+  <path d="M120 420 C 330 395, 520 405, 760 380 S 1020 360, 1110 330" stroke="#7a5a3a" stroke-width="16" fill="none" stroke-linecap="round"/>
+  <path d="M640 392 C 690 350, 720 340, 770 330" stroke="#7a5a3a" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <ellipse cx="780" cy="322" rx="34" ry="14" fill="#5e9b4a" transform="rotate(-25 780 322)"/>
+  <ellipse cx="300" cy="392" rx="38" ry="15" fill="#5e9b4a" transform="rotate(18 300 392)"/>
+  <ellipse cx="1010" cy="342" rx="34" ry="13" fill="#7fb069" transform="rotate(-30 1010 342)"/>
+  <!-- tail -->
+  <path d="M330 300 L 205 360 L 228 312 L 196 300 Z" fill="#2f5d3a"/>
+  <!-- body -->
+  <ellipse cx="430" cy="290" rx="135" ry="88" fill="#3f7d4c"/>
+  <ellipse cx="455" cy="318" rx="98" ry="56" fill="#f2c27a"/>
+  <!-- wing -->
+  <path d="M360 262 C 420 230, 500 245, 530 290 C 470 300, 400 300, 345 300 Z" fill="#2f5d3a"/>
+  <path d="M380 275 C 430 262, 480 268, 505 290" stroke="#5e9b4a" stroke-width="5" fill="none"/>
+  <!-- head -->
+  <circle cx="555" cy="215" r="62" fill="#3f7d4c"/>
+  <circle cx="575" cy="205" r="13" fill="#ffffff"/>
+  <circle cx="579" cy="205" r="7" fill="#1f3b2d"/>
+  <!-- open beak -->
+  <path d="M610 212 L 668 196 L 614 222 Z" fill="#e08e1b"/>
+  <path d="M612 226 L 664 236 L 610 234 Z" fill="#c9741a"/>
+  <!-- legs -->
+  <path d="M420 370 L 412 405 M470 368 L 478 400" stroke="#7a5a3a" stroke-width="6" stroke-linecap="round"/>
+  <!-- song: sound waves -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M700 196 A 40 40 0 0 1 700 252" stroke="#5e9b4a" stroke-width="8"/>
+    <path d="M735 170 A 75 75 0 0 1 735 278" stroke="#7fb069" stroke-width="8"/>
+    <path d="M772 144 A 112 112 0 0 1 772 304" stroke="#a8d595" stroke-width="8"/>
+  </g>
+  <!-- detection badge -->
+  <circle cx="930" cy="170" r="46" fill="#e08e1b"/>
+  <path d="M908 171 L 924 187 L 954 155" stroke="#ffffff" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
